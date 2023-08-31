@@ -1,0 +1,89 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\
+    {AuthController, CalendarioController, CheckController, ResourcesController, TimeSlotChangeController, TramosController,
+        TurnosController, UserCalendarioController, UserController};
+
+Route::post('login', [AuthController::class, 'login']);
+
+Route::controller(ResourcesController::class)->prefix('resources')->group(function() {
+    Route::get('/logo', 'logo');
+    Route::get('/logo/dark', 'logo_dark');
+    Route::get('/logosm', 'logosm');
+    Route::get('/logosm/dark', 'logosm_dark');
+    Route::get('/favico', 'favico');
+});
+
+Route::group(['middleware'=>['auth:sanctum']],function () {
+
+    Route::controller(AuthController::class)->prefix('logout')->group(function ()
+    {
+        Route::any('/', 'Logout');
+        Route::any('/everywhere', 'Logout', ['everyWhere' => true]);
+    });
+
+    Route::group(['prefix'=>'currentuserinfo'], function() {
+        Route::any('/', [AuthController::class, 'CurrentUser']);
+
+        Route::controller(UserCalendarioController::class)->prefix('calendarios')->group(function ()
+        {
+            Route::post('/mes', 'GetMonth');
+        });
+    });
+
+    Route::controller(UserController::class)->prefix('users')->group(function()
+    {
+        Route::get('/{id}', 'GetUser')->whereNumber('id');
+        Route::get('/', 'GetAllUsers');
+        Route::post('/', 'CreateUser');
+        Route::put('/{id}', 'UpdateUser')->whereNumber('id');
+        Route::post('/{id}/calendario', 'GetMonth')->whereNumber('id');
+        Route::put('/{id}/turnos', 'UpdateTurno')->whereNumber('id');
+    });
+
+    Route::controller(CheckController::class)->prefix('check')->group(function ()
+    {
+        Route::any('/today', 'GetTodaySlots');
+        Route::any('/last', 'GetLastSlot');
+        Route::any('/next', 'GetNextAction');
+        Route::post('/from', 'GetSlotsFrom');
+        Route::any('/{action}', 'Check');
+    });
+
+    Route::controller(TurnosController::class)->prefix('turnos')->group(function ()
+    {
+        Route::get('/{id}', 'GetTurno')->whereNumber('id');
+        Route::get('/', 'GetTurnos');
+        Route::post('/', 'CreateTurno');
+        Route::put('/{id}', 'UpdateTurno')->whereNumber('id');
+    });
+
+    Route::controller(TramosController::class)->prefix('turnos/{turno_id}/tramos')->group(function ()
+    {
+        Route::get('/', 'GetTramos');
+        Route::post('/', 'CreateTramo');
+        Route::delete('/{id}', 'DeleteTramo');
+    });
+
+    Route::controller(CalendarioController::class)->prefix('calendarios')->group(function ()
+    {
+        Route::get('/', 'GetCalendarios');
+        Route::get('/{id}', 'GetCalendario')->whereNumber('id');
+        Route::post('/', 'CreateCalendario');
+        Route::patch('/{id}/disable', 'DisableCalendario');
+        Route::post('/{id}/dias', 'AddDias');
+        Route::get('/{id}/users', 'GetUsers');
+        Route::post('/{id}/users', 'SetUsers');
+    });
+
+    Route::controller(TimeSlotChangeController::class)->prefix('cambiodehora')->group(function ()
+    {
+        // Route::get('/', 'GetCalendarios');
+        Route::post('/nuevo', 'NewChange');
+        Route::get('/usuarios', 'GetUsers');
+        Route::post('/pendientes', 'GetUserPendingChanges');
+        Route::get('/{id}/aceptar', 'Accept')->whereNumber('id');
+        Route::get('/{id}/rechazar', 'Reject')->whereNumber('id');
+    });
+});

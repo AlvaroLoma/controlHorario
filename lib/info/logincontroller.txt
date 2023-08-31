@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Infrastructure\Utils\Response;
+use App\Infrastructure\Utils\Validator;
+use App\Services\IAuthService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class AuthController extends ControllerBase {
+
+	private IAuthService $_authService;
+
+	public function __construct(IAuthService $authService)
+	{
+		$this->_authService = $authService;
+	}
+
+	public function Login(Request $request)
+	{
+		$fields = Validator::ValidateLogin($request->all());
+		$authentication = $this->_authService->loging($fields['email'], $fields['password']);
+
+		return Response::Ok($authentication);
+	}
+
+	public function Logout($everyWhere = false)
+	{
+		$user = Auth::user();
+
+		if(!$user)
+			return Response::Unauthorized("User not found");
+
+		if($this->_authService->logout($user, $everyWhere))
+			return Response::NoContent();
+		else
+			return Response::InternalServerError("Error while logging out");
+	}
+
+	public function CurrentUser(){
+		$user = Auth::user();
+
+		if(!$user)
+			return Response::InternalServerError("User not found");
+
+		return Response::Ok($user);
+	}
+}
